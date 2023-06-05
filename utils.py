@@ -72,13 +72,14 @@ def remove_punctuation(text):
 
 class ExperimentRunner:
     def __init__(self):
-        pass
+        self.measure = []
 
     def measure_resource_utilization(self, start_time: float, process: psutil.Process):
         """Measure and log the resource utilization."""
         self.runtime = time.time() - start_time
         self.cpu_percent = process.cpu_percent()
         self.memory_usage = process.memory_info().rss
+        self.measure = [self.runtime, self.cpu_percent, self.memory_usage / 1024 / 1024]
         print(f"Runtime: {self.runtime:.2f} seconds")
         print(f"CPU Utilization: {self.cpu_percent:.2f}%")
         print(f"Memory Usage: {self.memory_usage / 1024 / 1024:.2f} MB")

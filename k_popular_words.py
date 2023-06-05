@@ -6,6 +6,7 @@ import psutil
 from threading import Thread, Lock
 from utils import reset_word_counter, read_file_chunks, split_text_chunks, remove_punctuation
 from multiprocessing import Pool
+import heapq
 
 
 class KMostPopularWords:
@@ -59,6 +60,21 @@ class KMostPopularWords:
             self.count_words(text)
 
         return sorted(self.word_counter.items(), key=lambda x: x[1], reverse=True)[:k]
+
+    @reset_word_counter
+    def get_top_k_words_baseline2(self, k: int) -> List[Tuple[str, int]]:
+        """Naive approach to load the full text into memory and count words"""
+        # Check whether the text can fit into memory
+        if not self.is_file_size_safe():
+            raise ValueError(
+                "File size is too large to be loaded into memory.")
+
+        with open(self.file_path, 'r') as file:
+            text = file.read().replace('\n', ' ')
+            text = remove_punctuation(text)
+            self.count_words(text)
+
+        return heapq.nlargest(k , self.word_counter.items(), key=lambda x: x[1])
 
     @reset_word_counter
     def get_top_k_words_chunk(self, k: int, chunk_size: int) -> List[Tuple[str, int]]:
