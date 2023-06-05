@@ -1,4 +1,3 @@
-
 import string
 from typing import Dict, Generator, List, Tuple
 import os
@@ -26,6 +25,7 @@ class KMostPopularWords:
             self.stopwords = set([line.strip("\n") for line in f.readlines()])
 
     def count_words(self, text) -> None:
+        text = remove_punctuation(text)
         for word in text.split():
             # Convert to lowercase
             word_lower = word.lower()
@@ -56,7 +56,6 @@ class KMostPopularWords:
 
         with open(self.file_path, 'r') as file:
             text = file.read().replace('\n', ' ')
-            text = remove_punctuation(text)
             self.count_words(text)
 
         return sorted(self.word_counter.items(), key=lambda x: x[1], reverse=True)[:k]
