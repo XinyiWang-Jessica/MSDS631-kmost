@@ -9,7 +9,7 @@ import heapq
 
 
 class KMostPopularWords:
-    def __init__(self, file_path: str):
+    def __init__(self, file_path: str, sorting_method="default"):
         # Path of the file to read from
         self.file_path = file_path
 
@@ -23,6 +23,10 @@ class KMostPopularWords:
         with open('data/stopwords.txt', 'r') as f:
             # Use set for fast lookup in constant time
             self.stopwords = set([line.strip("\n") for line in f.readlines()])
+            
+        if sorting_method not in ["default", "heap_sort"]:
+            raise ValueError("Unknown sorting method")
+        self.sorting_method = sorting_method
 
     def count_words(self, text) -> None:
         text = remove_punctuation(text)
@@ -57,7 +61,8 @@ class KMostPopularWords:
         with open(self.file_path, 'r') as file:
             text = file.read().replace('\n', ' ')
             self.count_words(text)
-
+        if self.sorting_method == "heap_sort":
+            return heapq.nlargest(k, self.word_counter.items(), key=lambda x: x[1])
         return sorted(self.word_counter.items(), key=lambda x: x[1], reverse=True)[:k]
 
     @reset_word_counter
@@ -73,7 +78,9 @@ class KMostPopularWords:
             text = remove_punctuation(text)
             self.count_words(text)
 
-        return heapq.nlargest(k , self.word_counter.items(), key=lambda x: x[1])
+        if self.sorting_method == "heap_sort":
+            return heapq.nlargest(k, self.word_counter.items(), key=lambda x: x[1])
+        return sorted(self.word_counter.items(), key=lambda x: x[1], reverse=True)[:k]
 
     @reset_word_counter
     def get_top_k_words_chunk(self, k: int, chunk_size: int) -> List[Tuple[str, int]]:
@@ -83,6 +90,8 @@ class KMostPopularWords:
             # Iterate over words of a chunk
             self.count_words(chunk)
 
+        if self.sorting_method == "heap_sort":
+            return heapq.nlargest(k, self.word_counter.items(), key=lambda x: x[1])
         return sorted(self.word_counter.items(), key=lambda x: x[1], reverse=True)[:k]
 
     @reset_word_counter
@@ -107,6 +116,9 @@ class KMostPopularWords:
 
         # Clean up lock
         self.lock = None
+        
+        if self.sorting_method == "heap_sort":
+            return heapq.nlargest(k, self.word_counter.items(), key=lambda x: x[1])
         return sorted(self.word_counter.items(), key=lambda x: x[1], reverse=True)[:k]
 
     def count_words_mp(self, text):
@@ -140,4 +152,6 @@ class KMostPopularWords:
                     self.word_counter[word] = self.word_counter.get(
                         word, 0) + count
 
+        if self.sorting_method == "heap_sort":
+            return heapq.nlargest(k, self.word_counter.items(), key=lambda x: x[1])
         return sorted(self.word_counter.items(), key=lambda x: x[1], reverse=True)[:k]
