@@ -2,6 +2,7 @@ from functools import wraps
 import time
 import psutil
 import string
+import tracemalloc
 
 
 def reset_word_counter(func):
@@ -19,6 +20,7 @@ def reset_word_counter(func):
         return result
 
     return wrapper
+
 
 def get_complete_words(chunk, remainder):
     """Extract complete words from a chunk and update the remainder."""
@@ -72,34 +74,52 @@ def remove_punctuation(text):
 
 class ExperimentRunner:
     def __init__(self):
-        self.measure = []
+        pass
 
-    def measure_resource_utilization(self, start_time: float, process: psutil.Process):
-        """Measure and log the resource utilization."""
-        self.runtime = time.time() - start_time
-        self.cpu_percent = process.cpu_percent()
-        self.memory_usage = process.memory_info().rss
-        self.measure = [self.runtime, self.cpu_percent, self.memory_usage / 1024 / 1024]
-        print(f"Runtime: {self.runtime:.2f} seconds")
-        print(f"CPU Utilization: {self.cpu_percent:.2f}%")
-        print(f"Memory Usage: {self.memory_usage / 1024 / 1024:.2f} MB")
+    def log_performance_and_resource(self, wall_time: float, cpu_time: float, peak_memory_usage: int):
+        """Log performance adn resource utilization."""
+        self.wall_time = wall_time
+        self.cpu_time = cpu_time
+        self.peak_memory_usage = peak_memory_usage
+        print(f"Wall Time: {self.wall_time:.2f} seconds")
+        print(f"CPU Time: {self.cpu_time:.2f} seconds")
+        print(
+            f"Peak Memory Usage: {self.peak_memory_usage / 1024 / 1024:.2f} MB")
 
+    def measure_peak_memory_usage(self, func, *args, **kwargs):
+        """Measure peak memory usage of a function."""
+        # Start memory monitoring
+        tracemalloc.start()
+        # Call the function
+        func(*args, **kwargs)
+        # Stop memory monitoring
+        cur_mem_usage, peak_mem_usage = tracemalloc.get_traced_memory()
+        tracemalloc.stop()
+        return peak_mem_usage
+    
+    def measure_time(self, func, *args, **kwargs):
+        """Measure wall & CPU time of a function."""
+        # Start time monitoring
+        wall_start_time = time.time()
+        cpu_start_time = time.process_time()
+        # Call the function
+        result = func(*args, **kwargs)
+        # Stop time monitoring and measure elapsed time
+        wall_time = time.time() - wall_start_time
+        cpu_time = time.process_time() - cpu_start_time
+        
+        return wall_time, cpu_time, result
+    
     def run_experiment(self, version_name: str, func, *args, **kwargs):
         """Run an experiment and log the results."""
         print(f"Running experiment: {version_name}")
 
-        # Start time
-        start_time = time.time()
-
-        # Start resource monitoring
-        process = psutil.Process()
-        process.cpu_percent()
-        process.memory_info()
-
-        # Call the function
-        result = func(*args, **kwargs)
-
-        # Stop resource monitoring
-        self.measure_resource_utilization(start_time, process)
+        peak_mem_usage = self.measure_peak_memory_usage(func, *args, **kwargs)
+        
+        # Measure speed without tracking memory usage since it introduces a lot of overhead
+        wall_time, cpu_time, result = self.measure_time(func, *args, **kwargs)
+        
+        self.log_performance_and_resource(
+            wall_time, cpu_time, peak_mem_usage)
 
         return result
