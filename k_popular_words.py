@@ -23,7 +23,7 @@ class KMostPopularWords:
         with open('data/stopwords.txt', 'r') as f:
             # Use set for fast lookup in constant time
             self.stopwords = set([line.strip("\n") for line in f.readlines()])
-            
+
         if sorting_method not in ["default", "heap_sort"]:
             raise ValueError("Unknown sorting method")
         self.sorting_method = sorting_method
@@ -66,23 +66,6 @@ class KMostPopularWords:
         return sorted(self.word_counter.items(), key=lambda x: x[1], reverse=True)[:k]
 
     @reset_word_counter
-    def get_top_k_words_baseline2(self, k: int) -> List[Tuple[str, int]]:
-        """Naive approach to load the full text into memory and count words"""
-        # Check whether the text can fit into memory
-        if not self.is_file_size_safe():
-            raise ValueError(
-                "File size is too large to be loaded into memory.")
-
-        with open(self.file_path, 'r') as file:
-            text = file.read().replace('\n', ' ')
-            text = remove_punctuation(text)
-            self.count_words(text)
-
-        if self.sorting_method == "heap_sort":
-            return heapq.nlargest(k, self.word_counter.items(), key=lambda x: x[1])
-        return sorted(self.word_counter.items(), key=lambda x: x[1], reverse=True)[:k]
-
-    @reset_word_counter
     def get_top_k_words_chunk(self, k: int, chunk_size: int) -> List[Tuple[str, int]]:
         """Split text into smaller chunks and count words in each chunk iteratively"""
         # Iterate over chunks of the text
@@ -116,7 +99,7 @@ class KMostPopularWords:
 
         # Clean up lock
         self.lock = None
-        
+
         if self.sorting_method == "heap_sort":
             return heapq.nlargest(k, self.word_counter.items(), key=lambda x: x[1])
         return sorted(self.word_counter.items(), key=lambda x: x[1], reverse=True)[:k]
@@ -145,6 +128,10 @@ class KMostPopularWords:
 
             # Map the count_words function to process each chunk in parallel
             results = pool.map(self.count_words_mp, sub_chunks)
+
+            pool.close()
+            # Wait for all processes to complete
+            pool.join()
 
             # Merge the results from all processes
             for result in results:

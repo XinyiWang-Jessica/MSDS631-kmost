@@ -73,8 +73,8 @@ def remove_punctuation(text):
 
 
 class ExperimentRunner:
-    def __init__(self):
-        pass
+    def __init__(self, measure_memory=False):
+        self.measure_memory = measure_memory
 
     def log_performance_and_resource(self, wall_time: float, cpu_time: float, peak_memory_usage: int):
         """Log performance adn resource utilization."""
@@ -96,7 +96,7 @@ class ExperimentRunner:
         cur_mem_usage, peak_mem_usage = tracemalloc.get_traced_memory()
         tracemalloc.stop()
         return peak_mem_usage
-    
+
     def measure_time(self, func, *args, **kwargs):
         """Measure wall & CPU time of a function."""
         # Start time monitoring
@@ -105,20 +105,21 @@ class ExperimentRunner:
         # Call the function
         result = func(*args, **kwargs)
         # Stop time monitoring and measure elapsed time
-        wall_time = time.time() - wall_start_time
         cpu_time = time.process_time() - cpu_start_time
-        
+        wall_time = time.time() - wall_start_time
+
         return wall_time, cpu_time, result
-    
+
     def run_experiment(self, version_name: str, func, *args, **kwargs):
         """Run an experiment and log the results."""
         print(f"Running experiment: {version_name}")
 
-        peak_mem_usage = self.measure_peak_memory_usage(func, *args, **kwargs)
         
+        peak_mem_usage = self.measure_peak_memory_usage(func, *args, **kwargs) if self.measure_memory else 0
+
         # Measure speed without tracking memory usage since it introduces a lot of overhead
         wall_time, cpu_time, result = self.measure_time(func, *args, **kwargs)
-        
+
         self.log_performance_and_resource(
             wall_time, cpu_time, peak_mem_usage)
 
